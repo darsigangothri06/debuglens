@@ -1,0 +1,4 @@
+Exception in thread "main" java.lang.NullPointerException: Cannot invoke "String.length()" because "str" is null
+    at com.example.utils.StringHelper.sanitize(StringHelper.java:28)
+    at com.example.service.UserService.processName(UserService.java:55)
+    at com.example.controller.UserController.createUser(UserController.java:32)

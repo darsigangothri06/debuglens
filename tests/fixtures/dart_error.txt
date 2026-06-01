@@ -1,0 +1,5 @@
+Unhandled exception:
+NoSuchMethodError: The method 'toJson' was called on null.
+#0      UserModel.toJson (package:myapp/models/user_model.dart:34:12)
+#1      ApiService.updateUser (package:myapp/services/api_service.dart:78:24)
+#2      ProfileNotifier.saveProfile (package:myapp/notifiers/profile_notifier.dart:45:18)

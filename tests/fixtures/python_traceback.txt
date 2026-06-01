@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/app/services/user_service.py", line 45, in get_user_profile
+    profile = db.query(User).filter_by(id=user_id).first()
+  File "/app/db/session.py", line 23, in query
+    return self.session.query(model)
+  File "/app/models/user.py", line 12, in __init__
+    self.name = data['name']
+KeyError: 'name'
