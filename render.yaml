@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: debuglens-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: LLM_MODEL
+        value: gemini-2.5-flash
+    plan: free
+
+  - type: web
+    name: debuglens-ui
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run ui/app.py --server.port $PORT --server.headless true --browser.gatherUsageStats false
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: API_URL
+        fromService:
+          name: debuglens-api
+          type: web
+          property: hostport
+    plan: free

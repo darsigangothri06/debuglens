@@ -1,9 +1,11 @@
+import os
+
 import requests
 import streamlit as st
 
 st.set_page_config(page_title="DebugLens", page_icon="🔍", layout="wide")
 
-API_URL = "http://localhost:8000/api"
+API_URL = os.getenv("API_URL", "http://localhost:8000/api")
 
 # --- Sidebar: Settings ---
 with st.sidebar:
