@@ -9,6 +9,12 @@ load_dotenv()
 class Settings:
     """Environment + settings management for DebugLens."""
 
+    DEFAULT_MODELS = {
+        "openai": "gpt-4o-mini",
+        "gemini": "gemini-2.5-flash",
+        "groq": "llama-3.3-70b-versatile",
+    }
+
     def __init__(
         self,
         llm_provider: Optional[str] = None,
@@ -16,7 +22,7 @@ class Settings:
         llm_model: Optional[str] = None,
         github_token: Optional[str] = None,
     ):
-        self.llm_provider = llm_provider or os.getenv("LLM_PROVIDER", "gemini")
+        self.llm_provider = llm_provider or os.getenv("LLM_PROVIDER", "groq")
         self.llm_api_key = llm_api_key or os.getenv("LLM_API_KEY", "")
         self.llm_model = llm_model or os.getenv("LLM_MODEL")
         self.github_token = github_token or os.getenv("GITHUB_TOKEN")
@@ -27,10 +33,7 @@ class Settings:
     def default_model(self) -> str:
         if self.llm_model:
             return self.llm_model
-        return {
-            "openai": "gpt-4o-mini",
-            "gemini": "gemini-2.5-flash",
-        }.get(self.llm_provider, "gpt-4o-mini")
+        return self.DEFAULT_MODELS.get(self.llm_provider, "llama-3.3-70b-versatile")
 
     def get_llm(self):
         """Build the LangChain LLM instance based on provider config."""
@@ -43,7 +46,16 @@ class Settings:
                 temperature=0.1,
                 timeout=60,
             )
-        elif self.llm_provider == "gemini":
+        if self.llm_provider == "groq":
+            from langchain_groq import ChatGroq
+
+            return ChatGroq(
+                model=self.default_model,
+                api_key=self.llm_api_key,
+                temperature=0.1,
+                timeout=60,
+            )
+        if self.llm_provider == "gemini":
             from langchain_google_genai import ChatGoogleGenerativeAI
 
             return ChatGoogleGenerativeAI(
@@ -53,5 +65,4 @@ class Settings:
                 timeout=60,
                 thinking_budget=0,
             )
-        else:
-            raise ValueError(f"Unsupported LLM provider: {self.llm_provider}")
+        raise ValueError(f"Unsupported LLM provider: {self.llm_provider}")

@@ -16,12 +16,9 @@ router = APIRouter()
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_error(request: AnalyzeRequest):
     """Analyze a stack trace and return root cause + fix."""
-    if not request.llm_api_key:
-        raise HTTPException(status_code=400, detail="LLM API key is required")
-
     settings = Settings(
-        llm_provider=request.llm_provider,
-        llm_api_key=request.llm_api_key,
+        llm_provider=request.llm_provider or None,
+        llm_api_key=request.llm_api_key or None,
         llm_model=request.llm_model,
         github_token=request.github_token,
     )
