@@ -45,7 +45,6 @@ class DebugLensPipeline:
         call_chain = self.tracer.trace(error)
         chain_text = self.tracer.format_chain(call_chain)
 
-        # Step 3: Root cause analysis (LLM)
         progress("Analyzing root cause...")
         try:
             rca = self.analyzer.analyze(error, chain_text)
@@ -56,7 +55,6 @@ class DebugLensPipeline:
                 "affected_frame": 0,
             }
 
-        # Step 4: Search for similar issues (external APIs, non-blocking)
         progress("Searching for similar issues...")
         similar = []
         try:
@@ -74,7 +72,6 @@ class DebugLensPipeline:
         except Exception:
             pass
 
-        # Step 5: Generate fix (LLM)
         progress("Generating fix suggestion...")
         affected_idx = rca.get("affected_frame", 0)
         source_at_error = None

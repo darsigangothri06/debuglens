@@ -1,3 +1,5 @@
+import time
+import logging
 from typing import Dict
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -5,6 +7,16 @@ from langchain_core.output_parsers import JsonOutputParser
 
 from ..parser.models import ParsedError
 from .prompts import ROOT_CAUSE_SYSTEM_PROMPT, ROOT_CAUSE_USER_PROMPT
+
+logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 3
+BASE_DELAY = 2
+
+
+def _is_rate_limit(err: Exception) -> bool:
+    msg = str(err).lower()
+    return "429" in msg or "rate" in msg or "quota" in msg
 
 
 class RootCauseAnalyzer:
@@ -25,5 +37,18 @@ class RootCauseAnalyzer:
             SystemMessage(content=ROOT_CAUSE_SYSTEM_PROMPT),
             HumanMessage(content=user_text),
         ]
-        response = self.llm.invoke(messages)
-        return self.parser.parse(response.content)
+
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = self.llm.invoke(messages)
+                return self.parser.parse(response.content)
+            except Exception as e:
+                if _is_rate_limit(e) and attempt < MAX_RETRIES - 1:
+                    delay = BASE_DELAY * (2 ** attempt)
+                    logger.warning(
+                        f"Rate limited in root cause analyzer, retrying in {delay}s "
+                        f"(attempt {attempt + 1}/{MAX_RETRIES})"
+                    )
+                    time.sleep(delay)
+                else:
+                    raise

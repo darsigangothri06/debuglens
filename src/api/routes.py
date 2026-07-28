@@ -28,7 +28,17 @@ async def analyze_error(request: AnalyzeRequest):
         repo_source=request.repo_source,
         github_token=request.github_token,
     )
-    report = pipeline.analyze(request.error_text)
+
+    try:
+        report = pipeline.analyze(request.error_text)
+    except Exception as e:
+        msg = str(e).lower()
+        if "429" in msg or "rate" in msg or "quota" in msg:
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limited by LLM provider. Please wait 30 to 60 seconds and try again.",
+            )
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {e}")
 
     return AnalyzeResponse(
         error_type=report.error.exception_type,

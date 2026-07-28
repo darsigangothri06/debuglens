@@ -89,8 +89,12 @@ class ErrorParser:
 
     def _llm_fallback_parse(self, text: str) -> ParsedError:
         """Use LLM to parse unusual/custom error formats via structured output."""
+        import time
+        import logging
         from langchain_core.messages import HumanMessage, SystemMessage
         from langchain_core.output_parsers import JsonOutputParser
+
+        _logger = logging.getLogger(__name__)
 
         messages = [
             SystemMessage(
@@ -104,21 +108,35 @@ class ErrorParser:
             ),
             HumanMessage(content=text),
         ]
-        response = self.llm.invoke(messages)
-        result = JsonOutputParser().parse(response.content)
 
-        frames = [
-            StackFrame(
-                file_path=f.get("file_path", ""),
-                line_number=int(f.get("line_number", 0)),
-                function_name=f.get("function_name", "<unknown>"),
-            )
-            for f in result.get("frames", [])
-        ]
-        return ParsedError(
-            language=result.get("language", "unknown"),
-            exception_type=result.get("exception_type", "UnknownError"),
-            message=result.get("message", text.split("\n")[-1]),
-            frames=frames,
-            raw_text=text,
-        )
+        for attempt in range(3):
+            try:
+                response = self.llm.invoke(messages)
+                result = JsonOutputParser().parse(response.content)
+
+                frames = [
+                    StackFrame(
+                        file_path=f.get("file_path", ""),
+                        line_number=int(f.get("line_number", 0)),
+                        function_name=f.get("function_name", "<unknown>"),
+                    )
+                    for f in result.get("frames", [])
+                ]
+                return ParsedError(
+                    language=result.get("language", "unknown"),
+                    exception_type=result.get("exception_type", "UnknownError"),
+                    message=result.get("message", text.split("\n")[-1]),
+                    frames=frames,
+                    raw_text=text,
+                )
+            except Exception as e:
+                msg = str(e).lower()
+                if ("429" in msg or "rate" in msg or "quota" in msg) and attempt < 2:
+                    delay = 2 * (2 ** attempt)
+                    _logger.warning(
+                        f"Rate limited in parser, retrying in {delay}s "
+                        f"(attempt {attempt + 1}/3)"
+                    )
+                    time.sleep(delay)
+                else:
+                    raise
