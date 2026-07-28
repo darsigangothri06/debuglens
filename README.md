@@ -1,76 +1,107 @@
-# DebugLens — Production Error Root-Cause Analyzer
+# DebugLens — AI-Powered Error Root Cause Analyzer
 
-Paste a stack trace, error log, or Sentry error — DebugLens reads your codebase (local repo or GitHub URL), traces the call chain from the crash point to the root cause, searches StackOverflow and GitHub Issues for similar known problems, and suggests a concrete fix with exact file + line references.
+> Paste a stack trace. It traces the call chain through your codebase, identifies the root cause via LLM reasoning, searches StackOverflow and GitHub Issues, and suggests a fix.
+
+**[GitHub](https://github.com/darsigangothri06/debuglens)**
+
+---
+
+## What It Does
+
+DebugLens takes a raw stack trace and a codebase (local directory or GitHub repo URL), then:
+
+1. **Parses the stack trace** — extracts file paths, function names, line numbers
+2. **Traces the call chain** — uses **Tree-sitter AST parsing** to follow function calls through your actual source code
+3. **Identifies root cause** — LLM analyzes the traced code path with the error context to pinpoint what went wrong
+4. **Searches for solutions** — queries StackOverflow and GitHub Issues for similar errors
+5. **Suggests a fix** — combines code context + community solutions into an actionable fix recommendation
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│ Stack Trace  │────▶│ Stack Parser │────▶│  Tree-sitter │
+│ (raw text)   │     │ (extract     │     │  AST Analysis│
+└─────────────┘     │  frames)     │     │  (trace call │
+                    └──────────────┘     │   chain)     │
+                                        └──────┬───────┘
+                                               │
+                    ┌──────────────┐     ┌──────▼───────┐
+                    │ StackOverflow│◀────│  LLM Root    │
+                    │ + GitHub     │     │  Cause       │
+                    │ Issue Search │     │  Analysis    │
+                    └──────┬───────┘     └──────────────┘
+                           │
+                    ┌──────▼───────┐
+                    │  Fix         │
+                    │  Suggestion  │
+                    └──────────────┘
+```
+
+## What Makes This Interesting
+
+- **Not just another "paste error, get answer" tool** — it actually reads your codebase and traces the execution path through AST analysis
+- **Tree-sitter for code understanding** — language-agnostic AST parsing (Python, JavaScript, TypeScript, Java, etc.) to follow function calls across files
+- **GitHub repo support** — point it at a GitHub URL and it clones + analyzes the repo
+- **Community knowledge** — integrates StackOverflow and GitHub Issues search so the fix suggestion includes real-world solutions
+
+## Tech Stack
+
+`Python` `LangChain` `Tree-sitter` `FastAPI` `Streamlit`
 
 ## Quick Start
 
 ```bash
-# 1. Clone
 git clone https://github.com/darsigangothri06/debuglens.git
 cd debuglens
 
-# 2. Virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# 3. Install
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# 4. Environment (optional — can use UI settings instead)
-cp .env.example .env
-# Edit .env with your API keys
-
-# 5. Start API server
+# Start API
 uvicorn src.api.main:app --reload --port 8000
 
-# 6. Start UI (separate terminal)
+# Start UI (separate terminal)
 streamlit run ui/app.py --server.port 8501
-
-# Open http://localhost:8501
 ```
 
-## How It Works
+## How to Use
 
-1. **Error Parser** — Regex + LLM hybrid parsing for Python, JavaScript, Java, Dart stack traces
-2. **Code Locator** — Reads source at each stack frame (local filesystem or GitHub API)
-3. **Call Chain Tracer** — Traces execution path with Tree-sitter AST analysis
-4. **Root Cause Analyzer** — LLM reasons through code + chain to find actual cause
-5. **Similar Issues Search** — StackOverflow API + GitHub Issues search
-6. **Fix Suggestion Generator** — Concrete code fix with file:line, prevention tips
+1. Open the Streamlit UI
+2. Paste a stack trace (Python, JavaScript, Java, etc.)
+3. Point to your codebase — either a local directory path or a GitHub repo URL
+4. Configure your LLM API key (Gemini or OpenAI) in the sidebar
+5. Click "Analyze" — watch DebugLens trace through your code and identify the root cause
 
-## API
+## Project Structure
 
 ```
-POST /api/analyze    — Full analysis pipeline
-POST /api/parse      — Quick parse without LLM analysis
-GET  /api/health     — Health check
+debuglens/
+├── src/
+│   ├── analysis/
+│   │   ├── stack_parser.py    # Stack trace parsing (multi-language)
+│   │   ├── code_tracer.py     # Tree-sitter AST call chain tracing
+│   │   └── root_cause.py      # LLM-powered root cause analysis
+│   ├── search/
+│   │   ├── stackoverflow.py   # StackOverflow API search
+│   │   └── github_issues.py   # GitHub Issues search
+│   ├── api/
+│   │   ├── main.py            # FastAPI app
+│   │   └── routes.py          # REST endpoints
+│   └── config.py
+├── ui/
+│   └── app.py                 # Streamlit interface
+├── requirements.txt
+└── Dockerfile
 ```
 
-## Configuration
+## Key Technical Decisions
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LLM_PROVIDER` | `gemini` | `openai` or `gemini` |
-| `LLM_API_KEY` | — | Your LLM API key |
-| `LLM_MODEL` | auto | `gpt-4o-mini` or `gemini-2.5-flash` |
-| `GITHUB_TOKEN` | — | For private GitHub repos |
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Code parsing | **Tree-sitter** | Language-agnostic AST parsing — works with Python, JS, TS, Java, Go without separate parsers |
+| Call chain tracing | **Custom AST walker** | Follow function calls across files by resolving imports and tracing call expressions in the AST |
+| LLM reasoning | **Structured output** | LLM receives the traced call chain + error context and outputs structured root cause analysis |
+| External search | **StackOverflow + GitHub Issues API** | Community solutions complement LLM reasoning with battle-tested fixes |
 
-## Testing
+## Author
 
-```bash
-pytest tests/ -v
-```
-
-## Docker
-
-```bash
-docker build -t debuglens .
-docker run -p 8000:8000 debuglens
-```
-
-## Tech Stack
-
-- Python 3.11+, LangChain 0.3.x, FastAPI, Streamlit
-- Tree-sitter for AST analysis
-- OpenAI / Google Gemini for LLM
-- StackOverflow + GitHub APIs for similar issue search
+**Gangothri Darsi** — [GitHub](https://github.com/darsigangothri06) | [LinkedIn](https://www.linkedin.com/in/darsigangothri06) | [Portfolio](https://gangothridarsi.vercel.app)
