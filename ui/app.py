@@ -20,7 +20,7 @@ st.title("DebugLens")
 st.caption("Paste a stack trace. Get the root cause and a suggested fix.")
 
 st.info(
-    "This demo uses an open-source LLM (Llama 4 Scout via Groq) on a free tier. "
+    "This demo uses an open-source LLM (Llama 3.3 70B via Groq) on a free tier. "
     "Output quality may vary compared to commercial models. "
     "Analysis typically takes 10 to 30 seconds depending on error complexity."
 )
