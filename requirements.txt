@@ -5,6 +5,7 @@ langchain-groq>=0.3.0
 fastapi>=0.115.0
 uvicorn>=0.30.0
 streamlit>=1.40.0
+starlette<1.4.0
 PyGithub>=2.0.0
 tree-sitter>=0.23.0
 tree-sitter-python>=0.23.0
