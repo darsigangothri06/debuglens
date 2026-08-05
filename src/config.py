@@ -12,7 +12,7 @@ class Settings:
     DEFAULT_MODELS = {
         "openai": "gpt-4o-mini",
         "gemini": "gemini-2.5-flash",
-        "groq": "llama-3.1-8b-instant",
+        "groq": "openai/gpt-oss-20b",
     }
 
     def __init__(
@@ -33,7 +33,7 @@ class Settings:
     def default_model(self) -> str:
         if self.llm_model:
             return self.llm_model
-        return self.DEFAULT_MODELS.get(self.llm_provider, "llama-3.1-8b-instant")
+        return self.DEFAULT_MODELS.get(self.llm_provider, "openai/gpt-oss-20b")
 
     def get_llm(self):
         """Build the LangChain LLM instance based on provider config."""
